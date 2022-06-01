@@ -1,0 +1,10 @@
+@startuml
+title User Flow
+
+App -> Phone: Clicks "Open Settings"
+Phone -> Phone: Pairs device
+Phone -> App: Returns to App
+App -> App: Scans for devices
+App -> App: Selects paired Glucometer
+App -> App: Clicks on "Read"
+@enduml

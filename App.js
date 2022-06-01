@@ -20,6 +20,7 @@ import {
   PermissionsAndroid,
   FlatList,
   TouchableHighlight,
+  Alert,
 } from 'react-native';
 import {stringToBytes, bytesToString} from 'convert-string';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
@@ -61,9 +62,10 @@ const App = () => {
     console.log('Disconnected from ' + data.peripheral);
   };
 
+  let receiveTimeout = null;
+  let results = '';
+
   const getSfloat16 = (b0, b1) => {
-
-
     /*const sign = (b1 & 0x80) > 0 ? -1 : 1;
 
 
@@ -78,25 +80,23 @@ const App = () => {
     return b0 * Math.pow(b1) *sign;*/
 
     let sign = 1;
-    if((b1 - 128) > 0) {
+    if (b1 - 128 > 0) {
       sign = -1;
       b1 = b1 - 128;
     }
 
-    b1 = b1/16;
+    b1 = b1 / 16;
 
-
-    if(b0/100>=1) {
-      b0 = b0/100;
-    } else if (b0/10>=1) {
-      b0 = b0/10;
+    if (b0 / 100 >= 1) {
+      b0 = b0 / 100;
+    } else if (b0 / 10 >= 1) {
+      b0 = b0 / 10;
     }
 
     console.log(b0);
     console.log(b1);
     console.log(sign);
-    return b0 * Math.pow(10, b1*sign) ;
-    
+    return b0 * Math.pow(10, b1 * sign);
   };
 
   const handleUpdateValueForCharacteristic = data => {
@@ -144,52 +144,99 @@ const App = () => {
           (second + '').padStart(2, '0'),
       );
 
- let offset;
- let kgl;
- let mgdl;
- let mol;
+      let offset;
+      let kgl;
+      let mgdl;
+      let mol;
 
-            let ptr = 10;
-            if (timeOffsetPresent) {
-                offset = bytes[ptr] + bytes[ptr+1] * 256;
-                ptr += 2;
-            }
+      let ptr = 10;
+      if (timeOffsetPresent) {
+        offset = bytes[ptr] + bytes[ptr + 1] * 256;
+        ptr += 2;
+      }
 
-            console.log(bytes[ptr]);
-            console.log(bytes[ptr + 1]);
-            if (concentrationUnitKgL) {
-                kgl = getSfloat16(bytes[ptr], bytes[ptr + 1]);
-                mgdl = kgl * 100000;
-            } else {
-                //mol = getSfloat16(bytes[ptr], bytes[ptr + 1]);
-                //mgdl = mol * 1000;// * Constants.MMOLL_TO_MGDL;
-            }
-            ptr += 2;
+      console.log(bytes[ptr]);
+      console.log(bytes[ptr + 1]);
+      if (concentrationUnitKgL) {
+        kgl = getSfloat16(bytes[ptr], bytes[ptr + 1]);
+        mgdl = kgl * 100000;
+      } else {
+        //mol = getSfloat16(bytes[ptr], bytes[ptr + 1]);
+        //mgdl = mol * 1000;// * Constants.MMOLL_TO_MGDL;
+      }
+      ptr += 2;
 
-            let typeAndLocation;
-                let sampleLocation;
-                let sampleType;
-            if (typeAndLocationPresent) {
-                typeAndLocation = bytes[ptr];
-                sampleLocation = (typeAndLocation & 0xF0) >> 4;
-                sampleType = (typeAndLocation & 0x0F);
-                ptr = ptr + 1;
-            }
+      let typeAndLocation;
+      let sampleLocation;
+      let sampleType;
+      if (typeAndLocationPresent) {
+        typeAndLocation = bytes[ptr];
+        sampleLocation = (typeAndLocation & 0xf0) >> 4;
+        sampleType = typeAndLocation & 0x0f;
+        ptr = ptr + 1;
+      }
 
-let status;
+      let status;
 
-            if (sensorStatusAnnunciationPresent) {
-                status = bytes[ptr];
+      if (sensorStatusAnnunciationPresent) {
+        status = bytes[ptr];
+      }
 
-            }
+      console.log(
+        'Glucose data: mg/dl: ' +
+          (mgdl > 10000 ? '-INFINITY' : mgdl) +
+          '  kg/l: ' +
+          (kgl > 1 ? '-INFINITY' : kgl) +
+          '  seq:' +
+          sequence +
+          ' sampleType: ' +
+          sampleType +
+          '  sampleLocation: ' +
+          sampleLocation +
+          '  time: ' +
+          hour +
+          ':' +
+          minute +
+          ':' +
+          second +
+          '  ' +
+          day +
+          '-' +
+          month +
+          '-' +
+          year +
+          ' timeoffset: ' +
+          offset,
+      );
 
-            
-
-            console.log("Glucose data: mg/dl: " + (mgdl > 10000 ? "-INFINITY" : mgdl) + "  kg/l: " + (kgl > 1 ? "-INFINITY" : kgl)
-                + "  seq:" + sequence + " sampleType: " + sampleType + "  sampleLocation: " + sampleLocation + "  time: " + hour + ":" + minute + ":" + second
-                + "  " + day + "-" + month + "-" + year + " timeoffset: " + offset);
-
+      results =
+        results +
+        (day + '').padStart(2, '0') +
+        '.' +
+        (month + '').padStart(2, '0') +
+        '.' +
+        year +
+        ' ' +
+        (hour + '').padStart(2, '0') +
+        ':' +
+        (minute + '').padStart(2, '0') +
+        ':' +
+        (second + '').padStart(2, '0') +
+        ' - ' +
+        (mgdl > 10000 ? '-INFINITY' : mgdl) +
+        ' mg/dl' +
+        '\n';
+      if (receiveTimeout) {
+        clearTimeout(receiveTimeout); //cancel the previous timer.
+        receiveTimeout = null;
+      }
+      receiveTimeout = setTimeout(showResults, 500);
     }
+  };
+
+  const showResults = () => {
+    Alert.alert('Glucose data:', results);
+    results = '';
   };
 
   const retrieveConnected = () => {
@@ -279,6 +326,7 @@ let status;
     });
     BleManager.connect('48:70:1E:6D:60:CD')
       .then(() => {
+        Alert.alert('Connected');
         console.log('Connected');
       })
       .catch(error => {
@@ -287,7 +335,14 @@ let status;
   };
 
   const disconnect = () => {
-    BleManager.disconnect('48:70:1E:6D:60:CD');
+    BleManager.disconnect('48:70:1E:6D:60:CD')
+      .then(() => {
+        Alert.alert('Disconnected');
+        console.log('Disconnected');
+      })
+      .catch(error => {
+        console.log('Connection error', error);
+      });
   };
 
   const testPeripheral = peripheral => {

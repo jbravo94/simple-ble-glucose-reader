@@ -28,8 +28,21 @@ import {Colors} from 'react-native/Libraries/NewAppScreen';
 import BleManager from 'react-native-ble-manager/BleManager';
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+import BluetoothStateManager from 'react-native-bluetooth-state-manager';
+import RNBluetoothClassic, {
+  BluetoothEventType,
+} from 'react-native-bluetooth-classic';
 
 const App = () => {
+  // Service
+  const DEVICE_INFO_SERVICE = "0000180a-0000-1000-8000-00805f9b34fb";
+  const MANUFACTURER_NAME = "00002a29-0000-1000-8000-00805f9b34fb";
+  const GLUCOSE_SERVICE = "00001808-0000-1000-8000-00805f9b34fb";
+
+  const GLUCOSE_CHARACTERISTIC = "00002a18-0000-1000-8000-00805f9b34fb";
+  const CONTEXT_CHARACTERISTIC = "00002a34-0000-1000-8000-00805f9b34fb";
+  const RECORDS_CHARACTERISTIC = "00002a52-0000-1000-8000-00805f9b34fb";
+
   const [isScanning, setIsScanning] = useState(false);
   const peripherals = new Map();
   const [list, setList] = useState([]);
@@ -108,7 +121,7 @@ const App = () => {
       data.value,
     );
 
-    if (data.characteristic === '00002a18-0000-1000-8000-00805f9b34fb') {
+    if (data.characteristic === GLUCOSE_CHARACTERISTIC) {
       const bytes = data.value;
 
       const flags = bytes[0];
@@ -265,25 +278,32 @@ const App = () => {
 
   const read = () => {
     BleManager.retrieveServices('48:70:1E:6D:60:CD').then(peripheralData => {
-      BleManager.startNotification(
+
+      BleManager.read('48:70:1E:6D:60:CD', DEVICE_INFO_SERVICE, MANUFACTURER_NAME).then((data) => {
+        console.log(bytesToString(data));
+      }).catch((error) => {
+        console.log(JSON.stringify(error));
+      });
+
+      /*BleManager.startNotification(
         '48:70:1E:6D:60:CD',
-        '00001808-0000-1000-8000-00805f9b34fb',
-        '00002a52-0000-1000-8000-00805f9b34fb',
+        GLUCOSE_SERVICE,
+        RECORDS_CHARACTERISTIC,
       ).then(() => {
         BleManager.startNotification(
           '48:70:1E:6D:60:CD',
-          '00001808-0000-1000-8000-00805f9b34fb',
-          '00002a18-0000-1000-8000-00805f9b34fb',
+          GLUCOSE_SERVICE,
+          GLUCOSE_CHARACTERISTIC,
         ).then(() => {
           BleManager.startNotification(
             '48:70:1E:6D:60:CD',
-            '00001808-0000-1000-8000-00805f9b34fb',
-            '00002a34-0000-1000-8000-00805f9b34fb',
+            GLUCOSE_SERVICE,
+            CONTEXT_CHARACTERISTIC,
           ).then(() => {
             BleManager.write(
               '48:70:1E:6D:60:CD',
-              '00001808-0000-1000-8000-00805f9b34fb',
-              '00002a52-0000-1000-8000-00805f9b34fb',
+              GLUCOSE_SERVICE,
+              RECORDS_CHARACTERISTIC,
               [1, 1],
             )
               .then(data => {
@@ -296,7 +316,7 @@ const App = () => {
               });
           });
         });
-      });
+      });*/
 
       //});
       /*const getAllData = stringToBytes('0101');*/
@@ -345,6 +365,27 @@ const App = () => {
       });
   };
 
+  const openSettings = () => {
+    /*BluetoothStateManager.openSettings().then(() => {
+      console.log(this.constructor.name, 'openSettings()', 'Success!');
+    })
+    .catch(error => {
+      console.log(this.constructor.name, 'openSettings()', 'ERROR!', error.code, error);
+    });*/
+    try {
+      RNBluetoothClassic.getBondedDevices()
+        .then(paired => {
+          console.log(JSON.stringify(paired));
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    } catch (err) {
+      // Error if Bluetooth is not enabled
+      // Or there are any issues requesting paired devices
+    }
+  };
+
   const testPeripheral = peripheral => {
     if (peripheral) {
       if (peripheral.connected) {
@@ -381,39 +422,6 @@ const App = () => {
                   });
                 },
               );
-
-              // Test using bleno's pizza example
-              // https://github.com/sandeepmistry/bleno/tree/master/examples/pizza
-              /*
-            BleManager.retrieveServices(peripheral.id).then((peripheralInfo) => {
-              console.log(peripheralInfo);
-              var service = '13333333-3333-3333-3333-333333333337';
-              var bakeCharacteristic = '13333333-3333-3333-3333-333333330003';
-              var crustCharacteristic = '13333333-3333-3333-3333-333333330001';
-              setTimeout(() => {
-                BleManager.startNotification(peripheral.id, service, bakeCharacteristic).then(() => {
-                  console.log('Started notification on ' + peripheral.id);
-                  setTimeout(() => {
-                    BleManager.write(peripheral.id, service, crustCharacteristic, [0]).then(() => {
-                      console.log('Writed NORMAL crust');
-                      BleManager.write(peripheral.id, service, bakeCharacteristic, [1,95]).then(() => {
-                        console.log('Writed 351 temperature, the pizza should be BAKED');
-                        
-                        //var PizzaBakeResult = {
-                        //  HALF_BAKED: 0,
-                        //  BAKED:      1,
-                        //  CRISPY:     2,
-                        //  BURNT:      3,
-                        //  ON_FIRE:    4
-                        //};
-                      });
-                    });
-                  }, 500);
-                }).catch((error) => {
-                  console.log('Notification error', error);
-                });
-              }, 200);
-            });*/
             }, 900);
           })
           .catch(error => {
@@ -529,6 +537,10 @@ const App = () => {
             </View>
           )}
           <View style={styles.body}>
+            <View style={{margin: 10}}>
+              <Button title={'Open Settings'} onPress={() => openSettings()} />
+            </View>
+
             <View style={{margin: 10}}>
               <Button title={'Connect Bluetooth'} onPress={() => connect()} />
             </View>

@@ -69,13 +69,6 @@ const App = () => {
   };
 
   const handleDisconnectedPeripheral = data => {
-    /*let peripheral = peripherals.get(data.peripheral);
-    if (peripheral) {
-      peripheral.connected = false;
-      peripherals.set(peripheral.id, peripheral);
-      setList(Array.from(peripherals.values()));
-    }*/
-
     if (connectedPeripheralId === data.peripheral) {
       setConnectedPeripheralId('');
     }
@@ -304,7 +297,16 @@ const App = () => {
   const getManufacturerName = deviceId => {
     BleManager.read(deviceId, DEVICE_INFO_SERVICE, MANUFACTURER_NAME)
       .then(data => {
-        console.log(bytesToString(data));
+        const manufacturerName = bytesToString(data);
+        console.log(manufacturerName);
+
+        switch (manufacturerName) {
+          case 'Roche':
+            Alert.alert('Supported Device detected: ' + manufacturerName);
+            break;
+          default:
+            Alert.alert('Not supported Device detected: ' + manufacturerName);
+        }
       })
       .catch(error => {
         console.log(JSON.stringify(error));
@@ -348,19 +350,16 @@ const App = () => {
     });
   };
 
-  const connect = peripheralId => {
-    BleManager.connect(peripheralId)
-      .then(() => {
-        Alert.alert('Connected');
-        console.log('Connected');
-      })
-      .catch(error => {
-        console.log('Connection error', error);
-      });
-  };
-
   const disconnect = peripheralId => {
-    return BleManager.disconnect(peripheralId);
+    return BleManager.disconnect(peripheralId).then(() => {
+      let p = peripherals.get(peripheralId);
+      if (p) {
+        setConnectedPeripheralId('');
+        p.connected = false;
+        peripherals.set(peripheralId, p);
+        setList(Array.from(peripherals.values()));
+      }
+    });
   };
 
   const openSettings = () => {
@@ -394,7 +393,9 @@ const App = () => {
               p.connected = true;
               peripherals.set(peripheral.id, p);
               setList(Array.from(peripherals.values()));
-              console.log(JSON.stringify(list));
+
+              setConnectedPeripheralId(peripheral.id);
+              getManufacturerName(peripheral.id);
             }
             console.log('Connected to ' + peripheral.id);
           })
@@ -519,19 +520,12 @@ const App = () => {
             </View>
 
             <View style={{margin: 10}}>
-              <Button title={'Read Bluetooth'} onPress={() => read()} />
-            </View>
-
-            <View style={{margin: 10}}>
               <Button title={'Open Settings'} onPress={() => openSettings()} />
             </View>
 
             {connectedPeripheralId ? (
               <View style={{margin: 10}}>
-                <Button
-                  title={'Disconnect'}
-                  onPress={() => disconnect(connectedPeripheralId)}
-                />
+                <Button title={'Read Bluetooth'} onPress={() => read()} />
               </View>
             ) : null}
 

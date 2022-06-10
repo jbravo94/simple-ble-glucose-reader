@@ -44,9 +44,11 @@ const App = () => {
   const RECORDS_CHARACTERISTIC = '00002a52-0000-1000-8000-00805f9b34fb';
 
   const [isScanning, setIsScanning] = useState(false);
-  const peripherals = new Map();
+  const [peripherals, setPeripherals] = useState(new Map());
   const [list, setList] = useState([]);
   const [pairedDevices, setPairedDevices] = useState([]);
+  const [connectedPeripheralId, setConnectedPeripheralId] = useState('');
+  const [pairedDevicesRetrieved, setPairedDevicesRetrieved] = useState(false);
 
   const startScan = () => {
     if (!isScanning) {
@@ -73,6 +75,11 @@ const App = () => {
       peripherals.set(peripheral.id, peripheral);
       setList(Array.from(peripherals.values()));
     }*/
+
+    if (connectedPeripheralId === data.peripheral) {
+      setConnectedPeripheralId('');
+    }
+
     console.log('Disconnected from ' + data.peripheral);
   };
 
@@ -253,26 +260,40 @@ const App = () => {
     results = '';
   };
 
-  const retrieveConnected = () => {
+  const disconnectConnected = () => {
     BleManager.getConnectedPeripherals([]).then(results => {
-      if (results.length == 0) {
+      if (results.length === 0) {
         console.log('No connected peripherals');
       }
-      console.log(results);
+
       for (var i = 0; i < results.length; i++) {
-        var peripheral = results[i];
-        peripheral.connected = true;
-        peripherals.set(peripheral.id, peripheral);
-        setList(Array.from(peripherals.values()));
+        const peripheral = results[i];
+        disconnect(peripheral.id).then(() => {
+          setConnectedPeripheralId('');
+          peripheral.connected = false;
+          peripherals.set(peripheral.id, peripheral);
+          setList(Array.from(peripherals.values()));
+        });
       }
     });
   };
 
-  const handleDiscoverPeripheral = peripheral => {
-    console.log('Got ble peripheral', peripheral);
-    console.log(pairedDevices);
-    // || pairedDevices.indexOf(peripheral.id) === -1
-    if (!peripheral.name) {
+  const getPairedDevices = async () => {
+    const paired = await RNBluetoothClassic.getBondedDevices();
+
+    const pairedAddresses = paired.map(pairedDevice => pairedDevice.address);
+
+    setPairedDevices(pairedAddresses);
+    setPairedDevicesRetrieved(true);
+    return pairedAddresses;
+  };
+
+  const handleDiscoverPeripheral = async peripheral => {
+    const paired = pairedDevicesRetrieved
+      ? pairedDevices
+      : await getPairedDevices();
+
+    if (!peripheral.name || paired.indexOf(peripheral.id) === -1) {
       return;
     }
 
@@ -291,24 +312,24 @@ const App = () => {
   };
 
   const read = () => {
-    BleManager.retrieveServices('48:70:1E:6D:60:CD').then(peripheralData => {
+    BleManager.retrieveServices(connectedPeripheralId).then(peripheralData => {
       BleManager.startNotification(
-        '48:70:1E:6D:60:CD',
+        connectedPeripheralId,
         GLUCOSE_SERVICE,
         RECORDS_CHARACTERISTIC,
       ).then(() => {
         BleManager.startNotification(
-          '48:70:1E:6D:60:CD',
+          connectedPeripheralId,
           GLUCOSE_SERVICE,
           GLUCOSE_CHARACTERISTIC,
         ).then(() => {
           BleManager.startNotification(
-            '48:70:1E:6D:60:CD',
+            connectedPeripheralId,
             GLUCOSE_SERVICE,
             CONTEXT_CHARACTERISTIC,
           ).then(() => {
             BleManager.write(
-              '48:70:1E:6D:60:CD',
+              connectedPeripheralId,
               GLUCOSE_SERVICE,
               RECORDS_CHARACTERISTIC,
               [1, 1],
@@ -327,8 +348,8 @@ const App = () => {
     });
   };
 
-  const connect = () => {
-    BleManager.connect('48:70:1E:6D:60:CD')
+  const connect = peripheralId => {
+    BleManager.connect(peripheralId)
       .then(() => {
         Alert.alert('Connected');
         console.log('Connected');
@@ -338,15 +359,8 @@ const App = () => {
       });
   };
 
-  const disconnect = () => {
-    BleManager.disconnect('48:70:1E:6D:60:CD')
-      .then(() => {
-        Alert.alert('Disconnected');
-        console.log('Disconnected');
-      })
-      .catch(error => {
-        console.log('Connection error', error);
-      });
+  const disconnect = peripheralId => {
+    return BleManager.disconnect(peripheralId);
   };
 
   const openSettings = () => {
@@ -366,6 +380,8 @@ const App = () => {
   };
 
   const testPeripheral = peripheral => {
+    disconnectConnected();
+
     if (peripheral) {
       if (peripheral.connected) {
         BleManager.disconnect(peripheral.id);
@@ -373,7 +389,7 @@ const App = () => {
         BleManager.connect(peripheral.id)
           .then(() => {
             let p = peripherals.get(peripheral.id);
-            console.log(JSON.stringify(peripherals));
+
             if (p) {
               p.connected = true;
               peripherals.set(peripheral.id, p);
@@ -390,24 +406,8 @@ const App = () => {
   };
 
   useEffect(() => {
-    RNBluetoothClassic.getBondedDevices()
-      .then(paired => {
-        const pairedAddresses = paired.map(
-          pairedDevice => pairedDevice.address,
-        );
-        console.log(pairedAddresses);
-        setPairedDevices(pairedAddresses);
-      })
-      .catch(error => {
-        console.log(error);
-      });
-
     BleManager.start({showAlert: false});
 
-    bleManagerEmitter.addListener(
-      'BleManagerDiscoverPeripheral',
-      handleDiscoverPeripheral,
-    );
     bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
     bleManagerEmitter.addListener(
       'BleManagerDisconnectPeripheral',
@@ -416,6 +416,10 @@ const App = () => {
     bleManagerEmitter.addListener(
       'BleManagerDidUpdateValueForCharacteristic',
       handleUpdateValueForCharacteristic,
+    );
+    bleManagerEmitter.addListener(
+      'BleManagerDiscoverPeripheral',
+      handleDiscoverPeripheral,
     );
 
     if (Platform.OS === 'android' && Platform.Version >= 23) {
@@ -521,6 +525,15 @@ const App = () => {
             <View style={{margin: 10}}>
               <Button title={'Open Settings'} onPress={() => openSettings()} />
             </View>
+
+            {connectedPeripheralId ? (
+              <View style={{margin: 10}}>
+                <Button
+                  title={'Disconnect'}
+                  onPress={() => disconnect(connectedPeripheralId)}
+                />
+              </View>
+            ) : null}
 
             {list.length == 0 && (
               <View style={{flex: 1, margin: 20}}>

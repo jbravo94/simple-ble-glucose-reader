@@ -1,4 +1,4 @@
-package dev.heinzl.siSimpleBLEGlucoseReaderglure;
+package dev.heinzl.sibleglure;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;

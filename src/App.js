@@ -357,6 +357,7 @@ const App = () => {
   return (
     <>
       <StatusBar barStyle="dark-content" />
+      <Text style={styles.headline}>Simple BLE Glucose Reader</Text>
       <SafeAreaView>
         <ScrollView
           contentInsetAdjustmentBehavior="automatic"
@@ -406,6 +407,12 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
+  headline: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 36,
+    paddingVertical: 10,
+  },
   scrollView: {
     backgroundColor: Colors.lighter,
   },

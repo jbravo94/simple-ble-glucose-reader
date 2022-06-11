@@ -1,8 +1,14 @@
 # Introduction
 
+This is a simple react native application...
+
 ## Tested Devices
 
+### Glucometer
 * Roche Accu-Chek Guide
+
+### Smartphone
+* Samsung Galaxy S20 (Android)
 
 # Video
 
@@ -23,3 +29,8 @@ TODO
 
 * https://github.com/rusel1989/react-native-bluetooth-serial
 * https://github.com/patlux/react-native-bluetooth-state-manager
+
+# TODOs
+
+* Release App
+* Make Video

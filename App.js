@@ -33,6 +33,31 @@ import RNBluetoothClassic, {
   BluetoothEventType,
 } from 'react-native-bluetooth-classic';
 
+// https://github.com/NightscoutFoundation/xDrip/blob/c48ef307c6dd28f6f6027a775a2b82c89a5b281d/app/src/main/java/com/eveningoutpost/dexdrip/glucosemeter/BluetoothCHelper.java#L9
+const getSfloat16 = (b0, b1) => {
+  const mantissa = unsignedToSigned(
+    unsignedByteToInt(b0) + ((unsignedByteToInt(b1) & 0x0f) << 8),
+    12,
+  );
+  const exponent = unsignedToSigned(unsignedByteToInt(b1) >> 4, 4);
+  return mantissa * Math.pow(10, exponent);
+};
+
+const unsignedByteToInt = b => {
+  return b & 0xff;
+};
+
+const unsignedBytesToInt = (b, c) => {
+  return ((unsignedByteToInt(c) << 8) + unsignedByteToInt(b)) & 0xffff;
+};
+
+const unsignedToSigned = (unsigned, size) => {
+  if ((unsigned & (1 << (size - 1))) != 0) {
+    unsigned = -1 * ((1 << (size - 1)) - (unsigned & ((1 << (size - 1)) - 1)));
+  }
+  return unsigned;
+};
+
 const App = () => {
   // Service
   const DEVICE_INFO_SERVICE = '0000180a-0000-1000-8000-00805f9b34fb';
@@ -79,40 +104,6 @@ const App = () => {
   let receiveTimeout = null;
   let results = '';
 
-  const getSfloat16 = (b0, b1) => {
-    /*const sign = (b1 & 0x80) > 0 ? -1 : 1;
-
-
-    if(sign === -1) {
-      b1=b1-128;
-      b1=b1/8;
-    }
-
-    if(b0 >= 10) {
-      b0 = b0/10;
-    }
-    return b0 * Math.pow(b1) *sign;*/
-
-    let sign = 1;
-    if (b1 - 128 > 0) {
-      sign = -1;
-      b1 = b1 - 128;
-    }
-
-    b1 = b1 / 16;
-
-    if (b0 / 100 >= 1) {
-      b0 = b0 / 100;
-    } else if (b0 / 10 >= 1) {
-      b0 = b0 / 10;
-    }
-
-    console.log(b0);
-    console.log(b1);
-    console.log(sign);
-    return b0 * Math.pow(10, b1 * sign);
-  };
-
   const handleUpdateValueForCharacteristic = data => {
     console.log(
       'Received data from ' +
@@ -134,34 +125,21 @@ const App = () => {
       const contextInfoFollows = (flags & 0x10) > 0;
 
       // Little-endian ordering
-      const sequence = bytes[1] + bytes[2] * 256;
+      const sequence = (bytes[2] << 8) + bytes[1];
 
       // Little-endian ordering
-      const year = bytes[3] + bytes[4] * 256;
+      const year = (bytes[4] << 8) + bytes[3];
       const month = bytes[5];
       const day = bytes[6];
       const hour = bytes[7];
       const minute = bytes[8];
       const second = bytes[9];
 
-      console.log(
-        (day + '').padStart(2, '0') +
-          '.' +
-          (month + '').padStart(2, '0') +
-          '.' +
-          year +
-          ' ' +
-          (hour + '').padStart(2, '0') +
-          ':' +
-          (minute + '').padStart(2, '0') +
-          ':' +
-          (second + '').padStart(2, '0'),
-      );
+      const date = new Date(year, month - 1, day, hour, minute, second);
 
       let offset;
       let kgl;
       let mgdl;
-      let mol;
 
       let ptr = 10;
       if (timeOffsetPresent) {
@@ -169,20 +147,18 @@ const App = () => {
         ptr += 2;
       }
 
-      console.log(bytes[ptr]);
-      console.log(bytes[ptr + 1]);
       if (concentrationUnitKgL) {
         kgl = getSfloat16(bytes[ptr], bytes[ptr + 1]);
         mgdl = kgl * 100000;
       } else {
-        //mol = getSfloat16(bytes[ptr], bytes[ptr + 1]);
-        //mgdl = mol * 1000;// * Constants.MMOLL_TO_MGDL;
+        Alert.alert('mmol not implemented!');
       }
       ptr += 2;
 
       let typeAndLocation;
       let sampleLocation;
       let sampleType;
+
       if (typeAndLocationPresent) {
         typeAndLocation = bytes[ptr];
         sampleLocation = (typeAndLocation & 0xf0) >> 4;
@@ -225,19 +201,9 @@ const App = () => {
 
       results =
         results +
-        (day + '').padStart(2, '0') +
-        '.' +
-        (month + '').padStart(2, '0') +
-        '.' +
-        year +
-        ' ' +
-        (hour + '').padStart(2, '0') +
-        ':' +
-        (minute + '').padStart(2, '0') +
-        ':' +
-        (second + '').padStart(2, '0') +
+        date.toString() +
         ' - ' +
-        (mgdl > 10000 ? '-INFINITY' : mgdl) +
+        (mgdl < 0 ? '-INFINITY' : mgdl) +
         ' mg/dl' +
         '\n';
       if (receiveTimeout) {

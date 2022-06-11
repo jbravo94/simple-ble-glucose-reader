@@ -7,11 +7,13 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@petamoriken/float16": "^3.6.3",
     "convert-string": "^0.1.0",
+    "patch-package": "^6.4.7",
     "react": "17.0.2",
     "react-native": "0.68.2",
     "react-native-ble-manager": "^8.1.0",

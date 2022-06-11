@@ -1,0 +1,16 @@
+@startuml
+title BLE Data Flow after Pairing
+
+App -> App: Select device
+App -> Glucometer: Connect
+App -> Glucometer: Read Manufacturer Name
+App <- Glucometer: Shows result
+App -> App: Trigger results reading
+App -> Glucometer: Retrieve Services
+App <- Glucometer: Return results
+App -> Glucometer: Enable notifications for glucose characteristics
+App -> Glucometer: Write retrieval command
+App <- Glucometer: Returns results in notification handler
+App -> App: Shows results
+App <- Glucometer: Disconnect when finished
+@enduml

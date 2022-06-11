@@ -1,5 +1,9 @@
 # Introduction
 
+## Tested Devices
+
+* Roche Accu-Chek Guide
+
 # Video
 
 TODO

@@ -1,0 +1,10 @@
+@startuml
+title User Flow
+
+App -> Phone: Click "Open Settings"
+Phone -> Phone: Pair device
+Phone -> App: Return to App
+App -> App: Scan for devices
+App -> App: Select paired Glucometer
+App -> App: Click on "Read"
+@enduml

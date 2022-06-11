@@ -1,4 +1,4 @@
-package com.ble;
+package dev.heinzl.siSimpleBLEGlucoseReaderglure;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
@@ -12,7 +12,7 @@ public class MainActivity extends ReactActivity {
    */
   @Override
   protected String getMainComponentName() {
-    return "ble";
+    return "SimpleBLEGlucoseReader";
   }
 
   /**
@@ -32,7 +32,7 @@ public class MainActivity extends ReactActivity {
     @Override
     protected ReactRootView createRootView() {
       ReactRootView reactRootView = new ReactRootView(getContext());
-      // If you opted-in for the New Architecture, we enable the Fabric Renderer.
+      // If you opted-in for the New Architecture, we enaSimpleBLEGlucoseReader the Fabric Renderer.
       reactRootView.setIsFabric(BuildConfig.IS_NEW_ARCHITECTURE_ENABLED);
       return reactRootView;
     }

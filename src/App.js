@@ -1,5 +1,5 @@
 /**
- * Simple BLE React Native App
+ * Simple BLE Glucose Reader
  *
  * @format
  * @flow strict-local

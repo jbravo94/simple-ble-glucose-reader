@@ -1,4 +1,4 @@
-package com.ble.newarchitecture;
+package dev.heinzl.sibleglure.newarchitecture;
 
 import android.app.Application;
 import androidx.annotation.NonNull;
@@ -19,9 +19,9 @@ import com.facebook.react.fabric.CoreComponentsRegistry;
 import com.facebook.react.fabric.EmptyReactNativeConfig;
 import com.facebook.react.fabric.FabricJSIModuleProvider;
 import com.facebook.react.uimanager.ViewManagerRegistry;
-import com.ble.BuildConfig;
-import com.ble.newarchitecture.components.MainComponentsRegistry;
-import com.ble.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
+import dev.heinzl.sibleglure.BuildConfig;
+import dev.heinzl.sibleglure.newarchitecture.components.MainComponentsRegistry;
+import dev.heinzl.sibleglure.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -5,8 +5,8 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>ble</string>
-	<key>CFBundleExecutable</key>
+	<string>Simple BLE Glucose Reader</string>
+	<key>CFBundleExecutaSimple BLE Glucose Reader</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>

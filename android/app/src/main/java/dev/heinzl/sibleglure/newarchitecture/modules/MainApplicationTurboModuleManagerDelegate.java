@@ -1,4 +1,4 @@
-package com.ble.newarchitecture.modules;
+package dev.heinzl.sibleglure.newarchitecture.modules;
 
 import com.facebook.jni.HybridData;
 import com.facebook.react.ReactPackage;

@@ -1,8 +1,0 @@
-diff --git a/node_modules/@petamoriken/float16/index.js b/node_modules/@petamoriken/float16/index.js
-new file mode 100644
-index 0000000..43c0b17
---- /dev/null
-+++ b/node_modules/@petamoriken/float16/index.js
-@@ -0,0 +1 @@
-+export * from './src/index.mjs';
-\ No newline at end of file

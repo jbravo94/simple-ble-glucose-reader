@@ -1,5 +1,5 @@
 /**
- * Sample BLE React Native App
+ * Simple BLE React Native App
  *
  * @format
  * @flow strict-local
@@ -32,6 +32,7 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 import BluetoothStateManager from 'react-native-bluetooth-state-manager';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import GlucoseReadingRx from './GlucoseReadingRx';
+import {getAllRecords} from './RecordsCmdTx';
 
 // TODO Fix warning properly instead of hiding
 LogBox.ignoreLogs(['new NativeEventEmitter']);
@@ -196,7 +197,7 @@ const App = () => {
           connectedPeripheralId,
           GLUCOSE_SERVICE,
           RECORDS_CHARACTERISTIC,
-          [1, 1],
+          getAllRecords(),
         )
           .then(data => {
             // Success code
@@ -248,6 +249,16 @@ const App = () => {
           });
       }
     }
+  };
+
+  const showInfo = () => {
+    const steps = [];
+    steps.push('1. Open settings and pair device first.');
+    steps.push('2. Scan (Lists paired and reachable devices)');
+    steps.push('3. Select device in list.');
+    steps.push('4. Click on read to retrieve glucose data.');
+
+    Alert.alert('Guide', steps.join('\n'));
   };
 
   useEffect(() => {
@@ -365,6 +376,10 @@ const App = () => {
 
             <View style={{margin: 10}}>
               <Button title={'Open Settings'} onPress={() => openSettings()} />
+            </View>
+
+            <View style={{margin: 10}}>
+              <Button title={'Info'} onPress={() => showInfo()} />
             </View>
 
             {connectedPeripheralId ? (

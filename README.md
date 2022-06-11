@@ -29,8 +29,11 @@ TODO
 
 * https://github.com/rusel1989/react-native-bluetooth-serial
 * https://github.com/patlux/react-native-bluetooth-state-manager
+* https://mt-system.ru/sites/default/files/documents/iwrap_hdp_application_note_0.pdf
+* https://www.bluetooth.com/wp-content/uploads/2019/03/PHD_Transcoding_WP_v16.pdf
 
 # TODOs
 
 * Release App
 * Make Video
+* Note interesting observations: Continua Guidelines, IEEE 11073-10417, IEEE 11073-20601, Bluetooth SIG Glucose, Little-Endian, SFLOAT vs. IEEE 754

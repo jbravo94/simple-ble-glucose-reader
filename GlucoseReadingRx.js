@@ -66,7 +66,7 @@ export default class GlucoseReadingRx {
   toString() {
     return (
       'Glucose data: mg/dl: ' +
-      this.mgdl +
+      (this.mgdl < 0 ? '-INFINITY' : this.mgdl) +
       '  seq:' +
       this.sequence +
       '  time: ' +

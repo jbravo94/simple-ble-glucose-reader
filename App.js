@@ -33,11 +33,12 @@ import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import GlucoseReadingRx from './GlucoseReadingRx';
 
 const App = () => {
-  // Service
+  // Services
   const DEVICE_INFO_SERVICE = '0000180a-0000-1000-8000-00805f9b34fb';
-  const MANUFACTURER_NAME = '00002a29-0000-1000-8000-00805f9b34fb';
+  const MANUFACTURER_NAME_SERVICE = '00002a29-0000-1000-8000-00805f9b34fb';
   const GLUCOSE_SERVICE = '00001808-0000-1000-8000-00805f9b34fb';
 
+  // Characteristics
   const GLUCOSE_CHARACTERISTIC = '00002a18-0000-1000-8000-00805f9b34fb';
   const CONTEXT_CHARACTERISTIC = '00002a34-0000-1000-8000-00805f9b34fb';
   const RECORDS_CHARACTERISTIC = '00002a52-0000-1000-8000-00805f9b34fb';
@@ -88,26 +89,6 @@ const App = () => {
     }
   };
 
-  const handleDisconnectedPeripheral = data => {
-    if (connectedPeripheralId === data.peripheral) {
-      unsetConnectedPeripheral(data.peripheral);
-    }
-  };
-
-  const handleUpdateValueForCharacteristic = data => {
-    if (data.characteristic === GLUCOSE_CHARACTERISTIC) {
-      const result = new GlucoseReadingRx(data.value);
-
-      results = results + result.toString() + '\n';
-
-      if (receiveTimeout) {
-        clearTimeout(receiveTimeout);
-        receiveTimeout = null;
-      }
-      receiveTimeout = setTimeout(showResults, 500);
-    }
-  };
-
   const showResults = () => {
     Alert.alert('Glucose data', results);
     results = '';
@@ -138,6 +119,24 @@ const App = () => {
     return pairedAddresses;
   };
 
+  const handleDisconnectedPeripheral = data => {
+    unsetConnectedPeripheral(data.peripheral);
+  };
+
+  const handleUpdateValueForCharacteristic = data => {
+    if (data.characteristic === GLUCOSE_CHARACTERISTIC) {
+      const result = new GlucoseReadingRx(data.value);
+
+      results = results + result.toString() + '\n';
+
+      if (receiveTimeout) {
+        clearTimeout(receiveTimeout);
+        receiveTimeout = null;
+      }
+      receiveTimeout = setTimeout(showResults, 500);
+    }
+  };
+
   const handleDiscoverPeripheral = async peripheral => {
     const paired = pairedDevicesRetrieved
       ? pairedDevices
@@ -152,7 +151,7 @@ const App = () => {
   };
 
   const getManufacturerName = deviceId => {
-    BleManager.read(deviceId, DEVICE_INFO_SERVICE, MANUFACTURER_NAME)
+    BleManager.read(deviceId, DEVICE_INFO_SERVICE, MANUFACTURER_NAME_SERVICE)
       .then(data => {
         const manufacturerName = bytesToString(data);
 
@@ -170,40 +169,39 @@ const App = () => {
   };
 
   const read = () => {
-    BleManager.retrieveServices(connectedPeripheralId).then(peripheralData => {
-      BleManager.startNotification(
-        connectedPeripheralId,
-        GLUCOSE_SERVICE,
-        RECORDS_CHARACTERISTIC,
-      ).then(() => {
-        BleManager.startNotification(
+    BleManager.retrieveServices(connectedPeripheralId).then(
+      async peripheralData => {
+        await BleManager.startNotification(
+          connectedPeripheralId,
+          GLUCOSE_SERVICE,
+          RECORDS_CHARACTERISTIC,
+        );
+        await BleManager.startNotification(
           connectedPeripheralId,
           GLUCOSE_SERVICE,
           GLUCOSE_CHARACTERISTIC,
-        ).then(() => {
-          BleManager.startNotification(
-            connectedPeripheralId,
-            GLUCOSE_SERVICE,
-            CONTEXT_CHARACTERISTIC,
-          ).then(() => {
-            BleManager.write(
-              connectedPeripheralId,
-              GLUCOSE_SERVICE,
-              RECORDS_CHARACTERISTIC,
-              [1, 1],
-            )
-              .then(data => {
-                // Success code
-                console.log('Write: ' + data);
-              })
-              .catch(error => {
-                // Failure code
-                console.log(error);
-              });
+        );
+        await BleManager.startNotification(
+          connectedPeripheralId,
+          GLUCOSE_SERVICE,
+          CONTEXT_CHARACTERISTIC,
+        );
+
+        BleManager.write(
+          connectedPeripheralId,
+          GLUCOSE_SERVICE,
+          RECORDS_CHARACTERISTIC,
+          [1, 1],
+        )
+          .then(data => {
+            // Success code
+          })
+          .catch(error => {
+            // Failure code
+            console.log(error);
           });
-        });
-      });
-    });
+      },
+    );
   };
 
   const disconnect = peripheralId => {
@@ -228,7 +226,7 @@ const App = () => {
       });
   };
 
-  const testPeripheral = peripheral => {
+  const connectPeripheral = peripheral => {
     disconnectConnected();
 
     if (peripheral) {
@@ -250,19 +248,27 @@ const App = () => {
   useEffect(() => {
     BleManager.start({showAlert: false});
 
-    bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
-    bleManagerEmitter.addListener(
-      'BleManagerDisconnectPeripheral',
-      handleDisconnectedPeripheral,
+    const bleManagerStopScanSubscription = bleManagerEmitter.addListener(
+      'BleManagerStopScan',
+      handleStopScan,
     );
-    bleManagerEmitter.addListener(
-      'BleManagerDidUpdateValueForCharacteristic',
-      handleUpdateValueForCharacteristic,
-    );
-    bleManagerEmitter.addListener(
-      'BleManagerDiscoverPeripheral',
-      handleDiscoverPeripheral,
-    );
+    const bleManagerDisconnectPeripheralSubscription =
+      bleManagerEmitter.addListener(
+        'BleManagerDisconnectPeripheral',
+        handleDisconnectedPeripheral,
+      );
+
+    const bleManagerDidUpdateValueForCharacteristicSubscription =
+      bleManagerEmitter.addListener(
+        'BleManagerDidUpdateValueForCharacteristic',
+        handleUpdateValueForCharacteristic,
+      );
+
+    const bleManagerDiscoverPeripheralSubscription =
+      bleManagerEmitter.addListener(
+        'BleManagerDiscoverPeripheral',
+        handleDiscoverPeripheral,
+      );
 
     if (Platform.OS === 'android' && Platform.Version >= 23) {
       PermissionsAndroid.check(
@@ -285,27 +291,18 @@ const App = () => {
     }
 
     return () => {
-      console.log('unmount');
-      bleManagerEmitter.removeListener(
-        'BleManagerDiscoverPeripheral',
-        handleDiscoverPeripheral,
-      );
-      bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
-      bleManagerEmitter.removeListener(
-        'BleManagerDisconnectPeripheral',
-        handleDisconnectedPeripheral,
-      );
-      bleManagerEmitter.removeListener(
-        'BleManagerDidUpdateValueForCharacteristic',
-        handleUpdateValueForCharacteristic,
-      );
+      bleManagerStopScanSubscription.remove();
+      bleManagerDisconnectPeripheralSubscription.remove();
+      bleManagerDidUpdateValueForCharacteristicSubscription.remove();
+      bleManagerDiscoverPeripheralSubscription.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const renderItem = item => {
     const color = item.connected ? 'green' : '#fff';
     return (
-      <TouchableHighlight onPress={() => testPeripheral(item)}>
+      <TouchableHighlight onPress={() => connectPeripheral(item)}>
         <View style={[styles.row, {backgroundColor: color}]}>
           <Text
             style={{

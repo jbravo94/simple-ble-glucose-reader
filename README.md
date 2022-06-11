@@ -37,3 +37,4 @@ TODO
 * Release App
 * Make Video
 * Note interesting observations: Continua Guidelines, IEEE 11073-10417, IEEE 11073-20601, Bluetooth SIG Glucose, Little-Endian, SFLOAT vs. IEEE 754
+* Retrieve HCI Log and open in Wireshark

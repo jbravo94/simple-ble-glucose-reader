@@ -21,6 +21,7 @@ import {
   FlatList,
   TouchableHighlight,
   Alert,
+  LogBox,
 } from 'react-native';
 import {bytesToString} from 'convert-string';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
@@ -31,6 +32,9 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 import BluetoothStateManager from 'react-native-bluetooth-state-manager';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import GlucoseReadingRx from './GlucoseReadingRx';
+
+// TODO Fix warning properly instead of hiding
+LogBox.ignoreLogs(['new NativeEventEmitter']);
 
 const App = () => {
   // Services
@@ -97,7 +101,7 @@ const App = () => {
   const disconnectConnected = () => {
     BleManager.getConnectedPeripherals([]).then(results => {
       if (results.length === 0) {
-        console.log('No connected peripherals');
+        return;
       }
 
       for (var i = 0; i < results.length; i++) {
@@ -116,6 +120,7 @@ const App = () => {
 
     setPairedDevices(pairedAddresses);
     setPairedDevicesRetrieved(true);
+
     return pairedAddresses;
   };
 
@@ -248,35 +253,38 @@ const App = () => {
   useEffect(() => {
     BleManager.start({showAlert: false});
 
-    const bleManagerStopScanSubscription = bleManagerEmitter.addListener(
-      'BleManagerStopScan',
-      handleStopScan,
+    const subscriptions = [];
+
+    subscriptions.push(
+      bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan),
     );
-    const bleManagerDisconnectPeripheralSubscription =
+
+    subscriptions.push(
       bleManagerEmitter.addListener(
         'BleManagerDisconnectPeripheral',
         handleDisconnectedPeripheral,
-      );
+      ),
+    );
 
-    const bleManagerDidUpdateValueForCharacteristicSubscription =
+    subscriptions.push(
       bleManagerEmitter.addListener(
         'BleManagerDidUpdateValueForCharacteristic',
         handleUpdateValueForCharacteristic,
-      );
+      ),
+    );
 
-    const bleManagerDiscoverPeripheralSubscription =
+    subscriptions.push(
       bleManagerEmitter.addListener(
         'BleManagerDiscoverPeripheral',
         handleDiscoverPeripheral,
-      );
+      ),
+    );
 
     if (Platform.OS === 'android' && Platform.Version >= 23) {
       PermissionsAndroid.check(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       ).then(result => {
-        if (result) {
-          console.log('Permission is OK');
-        } else {
+        if (!result) {
           PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           ).then(result => {
@@ -291,11 +299,9 @@ const App = () => {
     }
 
     return () => {
-      bleManagerStopScanSubscription.remove();
-      bleManagerDisconnectPeripheralSubscription.remove();
-      bleManagerDidUpdateValueForCharacteristicSubscription.remove();
-      bleManagerDiscoverPeripheralSubscription.remove();
+      subscriptions.forEach(subscription => subscription.remove());
     };
+    // TODO Fix this
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -9,8 +9,10 @@ An showcase of the prototype can be viewed on YouTube by clicking on the image o
 # UML
 
 ## User Flow
+![User Flow](misc/uml/userflow/userflow.png?raw=true "User Flow")
 
 ## Bluetooth Communication Flow
+![BLE Flow](misc/uml/bleflow/bleflow.png?raw=true "BLE Flow")
 
 # Observations
 

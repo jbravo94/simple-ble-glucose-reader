@@ -4,7 +4,7 @@ This project shows the proof of concept to read data via Bluetooth from a glucom
 
 An showcase of the prototype can be viewed on YouTube by clicking on the image or here hhttps://youtu.be/pEUnmSh7OcE:
 
-[![20220413_012616_2](https://user-images.githubusercontent.com/26746017/164999309-1faf4f0f-649e-4166-ad7f-58d83795b867.jpg)](https://youtu.be/pEUnmSh7OcE "Simple BLE Glucose Reader")
+[![Simple BLE Glucose Reader](misc/images/screenshot.png?raw=true "Simple BLE Glucose Reader")](https://youtu.be/pEUnmSh7OcE "Simple BLE Glucose Reader")
 
 # UML
 

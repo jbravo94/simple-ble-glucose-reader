@@ -2,7 +2,7 @@
 
 This project shows the proof of concept to read data via Bluetooth from a glucometer with a React Native application.
 
-An showcase of the prototype can be viewed on YouTube by clicking on the image or here hhttps://youtu.be/pEUnmSh7OcE:
+An showcase of the prototype can be viewed on YouTube by clicking on the image or here https://youtu.be/pEUnmSh7OcE:
 
 [![Simple BLE Glucose Reader](misc/images/screenshot.png?raw=true "Simple BLE Glucose Reader")](https://youtu.be/pEUnmSh7OcE "Simple BLE Glucose Reader")
 

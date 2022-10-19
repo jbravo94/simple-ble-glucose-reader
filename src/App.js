@@ -5,7 +5,7 @@
  * @flow strict-local
  */
 
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -23,8 +23,8 @@ import {
   Alert,
   LogBox,
 } from 'react-native';
-import {bytesToString} from 'convert-string';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
+import { bytesToString } from 'convert-string';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 import BleManager from 'react-native-ble-manager/BleManager';
 const BleManagerModule = NativeModules.BleManager;
@@ -32,7 +32,7 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 import BluetoothStateManager from 'react-native-bluetooth-state-manager';
 import RNBluetoothClassic from 'react-native-bluetooth-classic';
 import GlucoseReadingRx from './GlucoseReadingRx';
-import {getAllRecords} from './RecordsCmdTx';
+import { getAllRecords } from './RecordsCmdTx';
 
 // TODO Fix warning properly instead of hiding
 LogBox.ignoreLogs(['new NativeEventEmitter']);
@@ -261,8 +261,39 @@ const App = () => {
     Alert.alert('Guide', steps.join('\n'));
   };
 
+  const requestPermission = async (permission) => {
+    const checkResult = await PermissionsAndroid.check(permission);
+
+    if (!checkResult) {
+      const requestResult = await PermissionsAndroid.request(permission);
+
+      if (requestResult) {
+        console.log('User accept');
+      } else {
+        console.log('User refuse');
+      }
+    }
+  }
+
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+
+      if (Platform.Version >= 23) {
+        await requestPermission(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+      }
+
+      if (Platform.Version >= 31) {
+        await requestPermission(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN);
+        await requestPermission(PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE);
+        await requestPermission(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
+      }
+    }
+  }
+
   useEffect(() => {
-    BleManager.start({showAlert: false});
+    requestPermissions();
+
+    BleManager.start({ showAlert: false });
 
     const subscriptions = [];
 
@@ -291,24 +322,6 @@ const App = () => {
       ),
     );
 
-    if (Platform.OS === 'android' && Platform.Version >= 23) {
-      PermissionsAndroid.check(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      ).then(result => {
-        if (!result) {
-          PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          ).then(result => {
-            if (result) {
-              console.log('User accept');
-            } else {
-              console.log('User refuse');
-            }
-          });
-        }
-      });
-    }
-
     return () => {
       subscriptions.forEach(subscription => subscription.remove());
     };
@@ -320,7 +333,7 @@ const App = () => {
     const color = item.connected ? 'green' : '#fff';
     return (
       <TouchableHighlight onPress={() => connectPeripheral(item)}>
-        <View style={[styles.row, {backgroundColor: color}]}>
+        <View style={[styles.row, { backgroundColor: color }]}>
           <Text
             style={{
               fontSize: 12,
@@ -368,37 +381,37 @@ const App = () => {
             </View>
           )}
           <View style={styles.body}>
-            <View style={{margin: 10}}>
+            <View style={{ margin: 10 }}>
               <Button
                 title={'Scan Bluetooth (' + (isScanning ? 'on' : 'off') + ')'}
                 onPress={() => startScan()}
               />
             </View>
 
-            <View style={{margin: 10}}>
+            <View style={{ margin: 10 }}>
               <Button title={'Open Settings'} onPress={() => openSettings()} />
             </View>
 
-            <View style={{margin: 10}}>
+            <View style={{ margin: 10 }}>
               <Button title={'Info'} onPress={() => showInfo()} />
             </View>
 
             {connectedPeripheralId ? (
-              <View style={{margin: 10}}>
+              <View style={{ margin: 10 }}>
                 <Button title={'Read Bluetooth'} onPress={() => read()} />
               </View>
             ) : null}
 
             {list.length == 0 && (
-              <View style={{flex: 1, margin: 20}}>
-                <Text style={{textAlign: 'center'}}>No peripherals</Text>
+              <View style={{ flex: 1, margin: 20 }}>
+                <Text style={{ textAlign: 'center' }}>No peripherals</Text>
               </View>
             )}
           </View>
         </ScrollView>
         <FlatList
           data={list}
-          renderItem={({item}) => renderItem(item)}
+          renderItem={({ item }) => renderItem(item)}
           keyExtractor={item => item.id}
         />
       </SafeAreaView>
